@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org" lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Dashboard Java</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 40px;
+            color: #333;
+        }
+        h1 { color: #222; }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            width: 220px;
+            margin-bottom: 30px;
+            border-left: 5px solid #007bff;
+        }
+        .card h3 { margin: 0; color: #666; font-size: 14px; text-transform: uppercase; }
+        .card p { font-size: 36px; font-weight: bold; color: #007bff; margin: 10px 0 0 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #007bff; color: white; font-weight: 600; }
+        tr:hover { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+<h1>📊 Painel de Controle (Dashboard)</h1>
+
+
+<div class="card">
+    <h3>Total de Registros</h3>
+    <p th:text="${total}">0</p>
+</div>
+
+<h2>⏱️ Últimos 5 Registros Importados</h2>
+<table>
+    <thead>
+    <tr>
+        <th>Coluna 1</th>
+        <th>Coluna 2</th>
+        <th>Coluna 3</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr th:each="reg : ${ultimos}">
+        <td th:text="${reg.coluna1}">Dado 1</td>
+        <td th:text="${reg.coluna2}">Dado 2</td>
+        <td th:text="${reg.coluna3}">Dado 3</td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

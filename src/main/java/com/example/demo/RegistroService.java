@@ -24,7 +24,7 @@ public class RegistroService {
             FileReader arquivo = new FileReader(caminho_do_arquivo);
             BufferedReader lerArquivo = new BufferedReader(arquivo);
 
-            String linha; // Cria a variável vazia para guardar o texto de cada linha.
+            String linha;
 
             while ((linha = lerArquivo.readLine()) != null) {
 
