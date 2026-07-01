@@ -22,10 +22,7 @@ public class DashboardController {
         long total = registroRepository.count();
 
         List<Registro> todos = registroRepository.findAll();
-        List<Registro> ultimoscinco = todos.stream()
-                .skip(Math.max(0, todos.size() - 5))
-                .toList();
 
-        return new DashboardDTO(total, ultimoscinco);
+        return new DashboardDTO(total, todos);
     }
 }
