@@ -18,7 +18,7 @@ public class DashboardWebController {
     public String exibirDashboard(Model model) {
         long total = registroRepository.count();
         List<Registro> todos = registroRepository.findAll();
- 
+
         model.addAttribute("total", total);
         model.addAttribute("ultimos", todos);
 

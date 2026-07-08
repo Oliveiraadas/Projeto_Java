@@ -43,7 +43,7 @@ public class RegistroService {
 
 
             }
-            lerArquivo.close(); //Somente para limpar a memória
+            lerArquivo.close();
 
         } catch (Exception e) {
             System.out.println("Erro ao criar o registro" + e.getMessage());
