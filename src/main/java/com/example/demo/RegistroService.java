@@ -1,5 +1,8 @@
 package com.example.demo;
 
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVParserBuilder;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,39 +19,58 @@ public class RegistroService {
 
     @Transactional
     public void processarArquivo() {
-
         try {
             Dotenv dotenv = Dotenv.load();
             String caminho_do_arquivo = dotenv.get("caminho_do_arquivo");
 
-            FileReader arquivo = new FileReader(caminho_do_arquivo);
-            BufferedReader lerArquivo = new BufferedReader(arquivo);
+            registroRepository.deleteAll();
 
-            String linha;
+            FileReader arquivoParaDetectar = new FileReader(caminho_do_arquivo);
+            BufferedReader leitorDetectar = new BufferedReader(arquivoParaDetectar);
+            String primeiraLinha = leitorDetectar.readLine();
+            leitorDetectar.close();
 
-            while ((linha = lerArquivo.readLine()) != null) {
+            char delimitador = descobrirDelimitador(primeiraLinha);
 
-                String[] linhas = linha.split(";");
+            FileReader arquivoReal = new FileReader(caminho_do_arquivo);
+            BufferedReader bufferedReal = new BufferedReader(arquivoReal);
 
-                if (linhas.length >= 3) {
-                    String col1 = linhas[0].trim();
-                    String col2 = linhas[1].trim();
-                    String col3 = linhas[2].trim();
+            com.opencsv.CSVParser parser = new CSVParserBuilder()
+                    .withSeparator(delimitador)
+                    .build();
 
-                    Registro novoRegistro = new Registro(col1, col2, col3);
-                    registroRepository.save(novoRegistro);
+            CSVReader csvReader = new CSVReaderBuilder(bufferedReal)
+                    .withCSVParser(parser)
+                    .build();
 
-                    System.out.printf("| %-18s | %-18s | %-18s |\n", col1, col2, col3);
+            String[] colunas;
+
+            while ((colunas = csvReader.readNext()) != null) {
+                if (colunas.length == 0 || (colunas.length == 1 && colunas[0].trim().isEmpty())) {
+                    continue;
                 }
 
+                String col1 = (colunas.length > 0) ? colunas[0].trim() : "N/A";
+                String col2 = (colunas.length > 1) ? colunas[1].trim() : "Não informado";
+                String col3 = (colunas.length > 2) ? colunas[2].trim() : "0";
 
+                Registro novoRegistro = new Registro(col1, col2, col3);
+                registroRepository.save(novoRegistro);
+
+                System.out.printf("| %-18s | %-18s | %-18s |\n", col1, col2, col3);
             }
-            lerArquivo.close();
+            csvReader.close();
 
         } catch (Exception e) {
-            System.out.println("Erro ao criar o registro" + e.getMessage());
+            System.out.println("Erro crítico ao processar o arquivo: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-
+    private char descobrirDelimitador(String primeiraLinha) {
+        if (primeiraLinha == null) return ';';
+        long virgula = primeiraLinha.chars().filter(ch -> ch == ',').count();
+        long pontoVirgula = primeiraLinha.chars().filter(ch -> ch == ';').count();
+        return (virgula > pontoVirgula) ? ',' : ';';
+    }
 }
