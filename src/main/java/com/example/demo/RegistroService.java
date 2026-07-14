@@ -3,13 +3,17 @@ package com.example.demo;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVParserBuilder;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.opencsv.CSVParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class RegistroService {
@@ -18,52 +22,58 @@ public class RegistroService {
     private RegistroRepository registroRepository;
 
     @Transactional
-    public void processarArquivo() {
-        try {
-            Dotenv dotenv = Dotenv.load();
-            String caminho_do_arquivo = dotenv.get("caminho_do_arquivo");
+    public void processarArquivoUsuario(MultipartFile arquivo) {
+        if (arquivo == null || arquivo.isEmpty()) {
+            System.out.println("Erro: O arquivo enviado está vazio.");
+            return;
+        }
 
+        try {
             registroRepository.deleteAll();
 
-            FileReader arquivoParaDetectar = new FileReader(caminho_do_arquivo);
-            BufferedReader leitorDetectar = new BufferedReader(arquivoParaDetectar);
-            String primeiraLinha = leitorDetectar.readLine();
-            leitorDetectar.close();
+            String primeiraLinha;
+            try (BufferedReader leitor = new BufferedReader(
+                    new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8))) {
+                primeiraLinha = leitor.readLine();
+            }
 
             char delimitador = descobrirDelimitador(primeiraLinha);
 
-            FileReader arquivoReal = new FileReader(caminho_do_arquivo);
-            BufferedReader bufferedReal = new BufferedReader(arquivoReal);
+            CSVParser parser = new CSVParserBuilder().withSeparator(delimitador).build();
 
-            com.opencsv.CSVParser parser = new CSVParserBuilder()
-                    .withSeparator(delimitador)
-                    .build();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(arquivo.getInputStream(), StandardCharsets.UTF_8));
+                 CSVReader csvReader = new CSVReaderBuilder(reader).withCSVParser(parser).build()) {
 
-            CSVReader csvReader = new CSVReaderBuilder(bufferedReal)
-                    .withCSVParser(parser)
-                    .build();
+                String[] colunas;
+                List<Registro> listaParaSalvar = new ArrayList<>();
+                boolean ehPrimeiraLinha = true;
 
-            String[] colunas;
+                while ((colunas = csvReader.readNext()) != null) {
+                    if (colunas.length == 0 || (colunas.length == 1 && colunas[0].trim().isEmpty())) {
+                        continue;
+                    }
 
-            while ((colunas = csvReader.readNext()) != null) {
-                if (colunas.length == 0 || (colunas.length == 1 && colunas[0].trim().isEmpty())) {
-                    continue;
+                    if (ehPrimeiraLinha) {
+                        ehPrimeiraLinha = false;
+                        continue;
+                    }
+
+                    String col1 = (colunas.length > 0) ? colunas[0].trim() : "N/A";
+                    String col2 = (colunas.length > 1) ? colunas[1].trim() : "Não informado";
+                    String col3 = (colunas.length > 2) ? colunas[2].trim() : "0";
+
+                    listaParaSalvar.add(new Registro(col1, col2, col3));
                 }
 
-                String col1 = (colunas.length > 0) ? colunas[0].trim() : "N/A";
-                String col2 = (colunas.length > 1) ? colunas[1].trim() : "Não informado";
-                String col3 = (colunas.length > 2) ? colunas[2].trim() : "0";
-
-                Registro novoRegistro = new Registro(col1, col2, col3);
-                registroRepository.save(novoRegistro);
-
-                System.out.printf("| %-18s | %-18s | %-18s |\n", col1, col2, col3);
+                if (!listaParaSalvar.isEmpty()) {
+                    registroRepository.saveAll(listaParaSalvar);
+                    System.out.println("Sucesso: " + listaParaSalvar.size() + " registros importados via upload.");
+                }
             }
-            csvReader.close();
 
         } catch (Exception e) {
-            System.out.println("Erro crítico ao processar o arquivo: " + e.getMessage());
-            e.printStackTrace();
+            System.out.println("Erro crítico ao processar upload: " + e.getMessage());
         }
     }
 
